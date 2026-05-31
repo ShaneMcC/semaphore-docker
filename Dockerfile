@@ -65,8 +65,12 @@ ENV PATH="/opt/semaphore/ansible-shim:$PATH"
 ENV VIRTUAL_ENV=""
 
 # Wrap the base entrypoint: keep tini as init, run our entrypoint (PATH fixup +
-# requirements.txt install into every venv), then exec the inherited CMD
-# (/usr/local/bin/server-wrapper) — not hardcoded, so an upstream rename works.
+# requirements.txt install into every venv), then exec the CMD below.
+# NB: overriding ENTRYPOINT resets the inherited CMD to null, so CMD must be
+# re-declared here (matching the base's /usr/local/bin/server-wrapper) — without
+# it our entrypoint's `exec "$@"` runs with no args, exits 0, and the container
+# restart-loops.
 ENTRYPOINT ["/sbin/tini", "--", "/opt/semaphore/entrypoint"]
+CMD ["/usr/local/bin/server-wrapper"]
 
 USER 1001
