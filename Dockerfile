@@ -1,4 +1,4 @@
-FROM semaphoreui/semaphore:v2.18.4
+FROM semaphoreui/semaphore:v2.18.5
 
 # Extra ansible MAJOR lines to install side by side (latest patch of each major).
 # Each ansible major maps 1:1 to an ansible-core minor for its whole life:
