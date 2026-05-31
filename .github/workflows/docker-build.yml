@@ -46,17 +46,17 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to ghcr.io
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to registry.shanemcc.net
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4.1.0
         with:
           registry: registry.shanemcc.net
           username: ${{ secrets.REGISTRY_USERNAME }}
@@ -88,7 +88,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and Push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7.1.0
         with:
           push: true
           context: .
