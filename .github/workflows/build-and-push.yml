@@ -1,0 +1,40 @@
+name: Build and Push
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - 'Dockerfile'
+      - 'ansible-shim.sh'
+      - 'entrypoint.sh'
+      - '.github/workflows/build-and-push.yml'
+      - '.github/workflows/docker-build.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # Default build: version derived from the Dockerfile FROM line (e.g.
+  # v2.18.4-multi), using the Dockerfile's default ANSIBLE_MAJORS and
+  # DEFAULT_ANSIBLE_MAJOR. A Dependabot bump of the base image re-tags it
+  # automatically.
+  default:
+    uses: ./.github/workflows/docker-build.yml
+    secrets: inherit
+    # with:
+    #   latest: true   # flip on to also publish :latest
+
+  # Add further variants as their own jobs, e.g. a build that also bundles 2.20
+  # and defaults to it:
+  #
+  # default-2-20:
+  #   uses: ./.github/workflows/docker-build.yml
+  #   with:
+  #     version: v2.18.4-multi-default2.20
+  #     build-args: |
+  #       ANSIBLE_MAJORS=9 11 13
+  #       DEFAULT_ANSIBLE_MAJOR=13
+  #     scope: semaphore-default2.20
+  #   secrets: inherit

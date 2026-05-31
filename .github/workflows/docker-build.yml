@@ -1,0 +1,100 @@
+name: Docker Build
+
+# Reusable build+push for the semaphore-docker image. Pushes every tag to both
+# ghcr.io/shanemcc/semaphore-docker and registry.shanemcc.net/public/semaphore-docker.
+# Call it once per variant you want to publish (see build-and-push.yml).
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'Image tag (e.g. v2.18.4-multi). If empty, derived from the Dockerfile FROM line.'
+        required: false
+        type: string
+        default: ''
+      build-args:
+        description: 'Newline-separated --build-arg values, e.g. "ANSIBLE_MAJORS=9 11 13\nDEFAULT_ANSIBLE_MAJOR=13".'
+        required: false
+        type: string
+        default: ''
+      latest:
+        description: 'Also push a :latest tag.'
+        required: false
+        type: boolean
+        default: false
+      scope:
+        description: 'Build-cache scope (give each variant a distinct scope).'
+        required: false
+        type: string
+        default: semaphore
+      dockerfile:
+        required: false
+        type: string
+        default: Dockerfile
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Build and Push
+    concurrency: build-${{ inputs.scope }}
+    permissions:
+      contents: read
+      packages: write   # push to ghcr.io via GITHUB_TOKEN
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to registry.shanemcc.net
+        uses: docker/login-action@v3
+        with:
+          registry: registry.shanemcc.net
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Generate tags
+        id: tags
+        run: |
+          ver="${{ inputs.version }}"
+          if [ -z "$ver" ]; then
+            base_tag="$(awk -F: '/^FROM[[:space:]]+semaphoreui\/semaphore:/{print $2; exit}' "${{ inputs.dockerfile }}")"
+            if [ -z "$base_tag" ]; then
+              echo "::error::could not derive a version from ${{ inputs.dockerfile }}; pass an explicit 'version' input"
+              exit 1
+            fi
+            ver="${base_tag}-multi"
+          fi
+          echo "Publishing version: ${ver} (latest=${{ inputs.latest }})"
+          {
+            echo "tags<<EOF"
+            for repo in ghcr.io/shanemcc/semaphore-docker \
+                        registry.shanemcc.net/public/semaphore-docker; do
+              echo "${repo}:${ver}"
+              if [ "${{ inputs.latest }}" = "true" ]; then
+                echo "${repo}:latest"
+              fi
+            done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ${{ inputs.dockerfile }}
+          build-args: ${{ inputs.build-args }}
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=${{ inputs.scope }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.scope }}
+          provenance: false
