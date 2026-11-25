@@ -1,4 +1,4 @@
-FROM semaphoreui/semaphore:v2.19.17
+FROM semaphoreui/semaphore:v2.20.23
 
 # Extra ansible MAJOR lines to install side by side (latest patch of each major).
 # Each ansible major maps 1:1 to an ansible-core minor for its whole life:
@@ -38,13 +38,15 @@ RUN set -eux; \
 USER root
 COPY ansible-shim.sh /opt/semaphore/ansible-shim/ansible-dispatch
 COPY entrypoint.sh   /opt/semaphore/entrypoint
+# python3.X/pip3.X names follow the base image's python minor (read at build time).
 RUN set -eux; \
     chmod +x /opt/semaphore/ansible-shim/ansible-dispatch /opt/semaphore/entrypoint; \
     ln -sf "${DEFAULT_ANSIBLE_MAJOR}" /opt/semaphore/apps/ansible/default; \
+    PYV=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])'); \
     for c in ansible ansible-playbook ansible-galaxy ansible-config ansible-console \
              ansible-doc ansible-inventory ansible-pull ansible-vault \
              ansible-connection ansible-community ansible-test \
-             python python3 python3.12 pip pip3 pip3.12; do \
+             python python3 "python$PYV" pip pip3 "pip$PYV"; do \
       ln -sf ansible-dispatch /opt/semaphore/ansible-shim/$c; \
     done; \
     apk del python3-dev build-base openssl-dev libffi-dev cargo; \

@@ -39,7 +39,8 @@ These are the load-bearing facts. If upstream changes them, this image breaks.
 ## Architecture
 
 - `ansible-shim.sh` is symlinked under `/opt/semaphore/ansible-shim/` as every
-  `ansible*` name **and** `python`/`python3`/`python3.12`/`pip`/`pip3`/`pip3.12`.
+  `ansible*` name **and** `python`/`python3`/`python3.X`/`pip`/`pip3`/`pip3.X`
+  (`3.X` = the base image's python minor, read at build time).
   It reads `${USE_ANSIBLE_VERSION:-default}`, resolves it to a venv, and execs
   `$VENV/bin/<invoked-name>`. So Ansible *and* a playbook's `python`/`pip` land in
   the same venv.
@@ -100,9 +101,11 @@ cores. To validate the workflows: `actionlint` (needs a git repo to anchor).
 Change the `FROM` tag (or let Dependabot do it). The output tag derives from it
 (`v<x>-multi`). After a bump, re-check: (1) the base image's bundled Ansible major
 is still `13` (the `2.20/13` mapping assumes the base ships a 13.x); (2) the base
-python minor still matches each built Ansible's supported controller range
-(currently python 3.12 suits cores 2.16–2.20); (3) `python3.<minor>`/`pip3.<minor>`
-shim symlinks in the Dockerfile still match the base python minor.
+python minor still works with each built Ansible. Currently python 3.14: only
+core 2.20 officially supports it as a controller; 2.16 and 2.18 (controller
+ranges 3.10–3.12 / 3.11–3.13) are unsupported there but pass the smoke test and a
+real playbook run — re-test them whenever the python minor moves. The
+`python3.X`/`pip3.X` shim symlinks follow the base python automatically.
 
 ## Conventions
 
