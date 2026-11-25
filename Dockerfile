@@ -29,7 +29,7 @@ RUN set -eux; \
       VENV=/opt/semaphore/apps/ansible/$M/venv; \
       python3 -m venv "$VENV" --system-site-packages; \
       "$VENV/bin/pip" install --upgrade pip; \
-      "$VENV/bin/pip" install "ansible>=$M,<$((M+1))" boto3 botocore requests pywinrm passlib; \
+      "$VENV/bin/pip" install "ansible>=$M,<$((M+1))" boto3 botocore requests pywinrm libpass; \
       "$VENV/bin/ansible" --version; \
       find "$VENV" -type d -name __pycache__ -prune -exec rm -rf {} +; \
     done
